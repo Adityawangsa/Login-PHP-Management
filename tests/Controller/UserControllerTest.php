@@ -19,6 +19,7 @@ namespace Adityawangsaa\LoginPhpManagementV1\Controller {
     use PHPUnit\Framework\TestCase;
     use Adityawangsaa\LoginPhpManagementV1\Repository\UserRepository;
     use Adityawangsaa\LoginPhpManagementV1\Domain\User;
+    use Adityawangsaa\LoginPhpManagementV1\Exception\ValidationException;
     use Adityawangsaa\LoginPhpManagementV1\Repository\SessionRepository;
     use Adityawangsaa\LoginPhpManagementV1\Service\SessionService;
 
@@ -124,7 +125,102 @@ namespace Adityawangsaa\LoginPhpManagementV1\Controller {
             $this->expectOutputRegex("[Location: /]");
             $this->expectOutputRegex("[X-AW-SESSION: ]");
         }
-
         
+        public function testUpdatePassword()
+        {
+            $user = new User();
+            $user->id = "wangsaa";
+            $user->name = "Wangsaa";
+            $user->password = password_hash("rahasia", PASSWORD_BCRYPT);
+            $this->userRepository->save($user);
+
+            $session = new Session();
+            $session->id = uniqid();
+            $session->userId = $user->id;
+            $this->sessionRepository->save($session);
+
+            $_COOKIE[SessionService::$COOKIE_NAME] = $session->id;
+            
+            $this->userController->updatePassword();
+
+            $this->expectOutputRegex("[Password]");
+            $this->expectOutputRegex("[Id]");
+            $this->expectOutputRegex("[wangsaa]");
+        }
+
+        public function testPostUpdatePasswordSuccess()
+        {
+            $user = new User();
+            $user->id = "wangsaa";
+            $user->name = "Wangsaa";
+            $user->password = password_hash("rahasia", PASSWORD_BCRYPT);
+            $this->userRepository->save($user);
+
+            $session = new Session();
+            $session->id = uniqid();
+            $session->userId = $user->id;
+            $this->sessionRepository->save($session);
+
+            $_COOKIE[SessionService::$COOKIE_NAME] = $session->id;
+            
+            $_POST['oldPassword'] = "rahasia";
+            $_POST['newPassword'] = "aditya";
+
+            $this->userController->postUpdatePassword();
+
+            $this->expectOutputRegex("[Location: /]");
+        }
+
+        public function testPostUpdatePasswordValidationError()
+        {
+            $user = new User();
+            $user->id = "wangsaa";
+            $user->name = "Wangsaa";
+            $user->password = password_hash("rahasia", PASSWORD_BCRYPT);
+            $this->userRepository->save($user);
+
+            $session = new Session();
+            $session->id = uniqid();
+            $session->userId = $user->id;
+            $this->sessionRepository->save($session);
+
+            $_COOKIE[SessionService::$COOKIE_NAME] = $session->id;
+
+            $_POST['oldPassword'] = '';
+            $_POST['newPassword'] = '';
+
+            $this->userController->postUpdatePassword();
+
+            $this->expectOutputRegex("[Password]");
+            $this->expectOutputRegex("[Id]");
+            $this->expectOutputRegex("[wangsaa]");
+            $this->expectOutputRegex("[Id, Old Password, New Password can not blank!]");
+        }
+
+        public function testPostUpdatePasswordWrongPassword()
+        {
+            $user = new User();
+            $user->id = "wangsaa";
+            $user->name = "Wangsaa";
+            $user->password = password_hash("rahasia", PASSWORD_BCRYPT);
+            $this->userRepository->save($user);
+
+            $session = new Session();
+            $session->id = uniqid();
+            $session->userId = $user->id;
+            $this->sessionRepository->save($session);
+
+            $_COOKIE[SessionService::$COOKIE_NAME] = $session->id;
+
+            $_POST['oldPassword'] = "salah";
+            $_POST['newPassword'] = "aditya";
+
+            $this->userController->postUpdatePassword();
+
+            $this->expectOutputRegex("[Password]");
+            $this->expectOutputRegex("[Id]");
+            $this->expectOutputRegex("[wangsaa]");
+            $this->expectOutputRegex("[Old password is wrong]");
+        }
     }
 }

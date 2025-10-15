@@ -6,6 +6,7 @@ use Adityawangsaa\LoginPhpManagementV1\App\View;
 use Adityawangsaa\LoginPhpManagementV1\Domain\Session;
 use Adityawangsaa\LoginPhpManagementV1\Exception\ValidationException;
 use Adityawangsaa\LoginPhpManagementV1\Model\UserLoginRequest;
+use Adityawangsaa\LoginPhpManagementV1\Model\UserPasswordUpdateRequest;
 use Adityawangsaa\LoginPhpManagementV1\Model\UserProfileUpdateRequest;
 use Adityawangsaa\LoginPhpManagementV1\Model\UserRegisterRequest;
 use Adityawangsaa\LoginPhpManagementV1\Repository\SessionRepository;
@@ -14,6 +15,7 @@ use Adityawangsaa\LoginPhpManagementV1\Service\SessionService;
 use Adityawangsaa\LoginPhpManagementV1\Service\UserService;
 use Exception;
 use PhpParser\Node\Expr\FuncCall;
+use PHPUnit\Util\Xml\ValidationResult;
 
 class UserController {
     private UserService $userService;
@@ -126,5 +128,37 @@ class UserController {
                 ]
             ]);
         }
+    }
+
+    public function updatePassword()
+    {
+        $user = $this->sessionService->current();
+        View::render("/User/password", [
+            "user" => [
+                "id" => $user->id
+            ]
+            ]);
+    }
+
+    public function postUpdatePassword()
+    {
+        $user = $this->sessionService->current();
+        $request = new UserPasswordUpdateRequest();
+        $request->id = $user->id;
+        $request->oldPassword = $_POST['oldPassword'];
+        $request->newPassword = $_POST['newPassword'];
+
+        try {
+            $this->userService->updatePassword($request);
+            View::redirect("/");
+        } catch (ValidationException $exception) {
+            View::render("User/password", [
+                "title" => "Update user password",
+                "error" => $exception->getMessage(),
+                "user" => [
+                    "id" => $user->id
+                ]
+            ]);
+        };
     }
 }
